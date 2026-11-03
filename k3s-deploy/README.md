@@ -24,10 +24,13 @@ k3s-deploy/
 
 ## Prerequisites
 
-- Terraform 1.5 or later
-- AWS CLI with a working profile
-- `kubectl`, `helm` (v3) and `jq`
-- A `terraform.tfvars` file (git-ignored) with the values in the next section
+The full list is in the [top-level README](../README.md#prerequisites). For this stack you need:
+
+- Terraform 1.5 or later, AWS CLI v2 with a working profile, `kubectl` (matching the cluster version), Helm 3.8 or later, and `jq`
+- AWS permissions for EC2, Elastic IPs, key pairs, security groups, and `ssm:GetParameter` on the Ubuntu AMI path. ELB, ACM and Route 53 are needed only with a domain
+- At least one free Elastic IP and enough vCPU quota for `instance_type` (`t3.medium` needs 2)
+- A VPC with two or more subnets in different availability zones, and an internet route
+- A Vision One bootstrap token, and a Mantle bearer token with model access enabled
 
 ## Inputs
 

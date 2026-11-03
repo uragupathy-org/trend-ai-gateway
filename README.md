@@ -2,6 +2,78 @@
 
 This repository deploys a single-node k3s cluster on AWS and runs the Trend AI Gateway in it. The gateway can be published on a public domain you configure, or reached through port-forward without one. It also includes two in-cluster mocks for testing (an LLM and MCP servers) and a live connection to Amazon Bedrock through the Mantle endpoint.
 
+## Prerequisites
+
+Check each group before you run `terraform apply`. Everything below runs from your own machine, the one that applies Terraform.
+
+### Local tools
+
+| Tool | Version | Used for |
+|---|---|---|
+| Terraform | 1.5 or later (tested with 1.12) | Creates the node, ALB, Secrets, gateway install and mocks |
+| AWS CLI v2 | Current | Authenticates Terraform to AWS through a named profile |
+| kubectl | Same minor version as the cluster's k3s server | Port-forward, status checks, and the Terraform `local-exec` steps |
+| Helm | 3.8 or later (OCI support) | Installs the gateway chart from `public.ecr.aws` |
+| jq | Any recent | Used by `test-llm.sh` and the Secret checks |
+| curl, python3 | Any recent | Test requests and the mock unit tests |
+| ssh | Any | Optional access to the node |
+
+Terraform's `local-exec` steps call `kubectl` and `helm` on the machine that applies, so both must be on `PATH` and must be able to reach the cluster's API on port 6443.
+
+### AWS account
+
+- **Profile:** a named AWS CLI profile with credentials. Check it with `aws sts get-caller-identity --profile <AWS_PROFILE>`.
+- **Region:** `ap-southeast-2` by default. Set `region` for another region. The Bedrock Mantle endpoint must be in the same region as the model access you enable.
+- **Permissions:** the profile needs to create and manage EC2 instances, key pairs, security groups, Elastic IPs and tags. It also needs ELB (ALB, listeners, target groups), ACM and Route 53 when you use a domain, and `ssm:GetParameter` on the Ubuntu AMI path under `/aws/service/canonical/`.
+- **Quotas:** one free Elastic IP, and enough On-Demand vCPU quota for the instance type. `t3.medium` needs 2 vCPUs.
+- **Network:** a VPC with at least two subnets in different availability zones. The default VPC normally works. Otherwise set `vpc_id` and `subnet_id`. An internet route is required, because the node downloads k3s and pulls images and the chart from the internet.
+- **Optional, for a public domain:** a public Route 53 hosted zone for your domain, with its nameservers delegated to Route 53, and its zone ID. Without a domain, none of this is needed.
+
+### Kubernetes
+
+- Nothing needs to be installed on the cluster. Terraform installs single-node k3s on Ubuntu 24.04 on an EC2 instance. The node needs at least 2 vCPUs and 4 GiB of RAM. `t3.medium` meets that.
+- The API port 6443 and SSH port 22 open only to `admin_cidr`. Leave `admin_cidr` null to use your current public IP.
+- Terraform writes the kubeconfig to `k3s-deploy/generated/`. Its context is named after the `name` variable.
+- The `trendai-gateway` namespace is created during the apply, so you don't need to create it.
+- After the apply, check the server version against your local kubectl:
+
+  ```bash
+  kubectl --kubeconfig k3s-deploy/generated/<name>-kubeconfig.yaml version
+  ```
+
+### Vision One
+
+- An account with AI Gateway access in your region, and permission to create a gateway.
+- A one-time bootstrap token from the AI Gateway setup flow. Put it in `visionone_bootstrap_token`. Its API URL goes in `overrides.yaml` under `gateway.visionone.url`.
+
+### Bedrock Mantle (for the live model connection)
+
+- A Mantle bearer token. Put it in `aws_bearer_token_bedrock`.
+- Model access enabled for the model you route to, in your region (the test alias uses `openai.gpt-oss-safeguard-20b`).
+- Outbound HTTPS from the node to `bedrock-mantle.<region>.api.aws`. The node's security group allows all outbound traffic.
+
+### Inputs
+
+Create `k3s-deploy/terraform.tfvars` from `terraform.tfvars.example`, and keep it out of Git. At minimum, set:
+
+- `aws_profile`, `name`, `region`
+- `visionone_bootstrap_token`
+- `aws_bearer_token_bedrock`
+- `domain_name`, `route53_zone_id` and `gateway_hostname`, only if you want a public domain
+
+Set the two token variables as `TF_VAR_...` environment variables instead, if you'd rather they aren't in a file.
+
+### Preflight check
+
+```bash
+terraform version
+aws sts get-caller-identity --profile <AWS_PROFILE>
+kubectl version --client
+helm version --short
+jq --version
+python3 --version
+```
+
 ## Live endpoints
 
 | Service | URL or address | Reachable from | Notes |
