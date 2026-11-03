@@ -1,0 +1,23 @@
+# Copy to terraform.tfvars and adjust. terraform.tfvars is git-ignored.
+
+aws_profile = "your-aws-profile"
+region      = "ap-southeast-2"
+name        = "k3s-aigatewaydemo"
+
+# Minimum that satisfies 2 vCPU / 4 GiB. Alternatives: t3a.medium, t3.large
+instance_type       = "t3.large"
+root_volume_size_gb = 40
+
+# Leave null to auto-detect your current public IP (/32)
+admin_cidr = null
+
+allow_http_https = false
+
+# Gateway endpoint. Set these in terraform.tfvars (git-ignored).
+domain_name         = "example.com"
+route53_zone_id     = "<ROUTE53_ZONE_ID>"
+gateway_hostname    = "aigateway.example.com"
+public_access_cidrs = ["0.0.0.0/0"]
+
+# Secrets: do not put these in a file. Set them in your shell instead:
+#   export TF_VAR_visionone_bootstrap_token='<token>'

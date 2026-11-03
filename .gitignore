@@ -1,0 +1,26 @@
+# Secrets and local state
+commands.txt
+/overrides.yaml
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+tfplan
+*.pem
+*.key
+generated/
+.terraform/
+.terraform.lock.hcl.bak
+crash.log
+
+# Documents are kept out of Git
+docs/
+*.pptx
+*.docx
+*.pdf
+*.md.bak
+~$*
+
+# macOS
+.DS_Store
+__pycache__/

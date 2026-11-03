@@ -1,0 +1,12 @@
+# Pins Traefik's HTTP entrypoint to NodePort 30080, which the ALB target group forwards to.
+# k3s applies this file from /var/lib/rancher/k3s/server/manifests/ on its own.
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    ports:
+      web:
+        nodePort: 30080

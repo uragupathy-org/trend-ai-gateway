@@ -1,0 +1,11 @@
+# Overrides file for AI Gateway: mygateway
+#
+gateway:
+  gatewayName: mygateway
+  secretsDir:
+    existingSecret: bedrock-mantle-keys
+    mountPath: /etc/secrets/gateway
+  visionone:
+    url: https://api.au.xdr.trendmicro.com
+    authToken:
+      existingSecret: vision-one-auth

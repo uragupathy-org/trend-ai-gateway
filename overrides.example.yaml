@@ -1,0 +1,17 @@
+# Helm values for the Trend AI Gateway chart.
+# Copy to overrides.yaml (git-ignored) and replace every <PLACEHOLDER>.
+# Never commit real tokens. Create the Anthropic secret in the cluster instead
+# (see README.md, step 2).
+#
+gateway:
+  gatewayName: trendai-agentic-gateway
+  secrets:
+    anthropic:
+      existingSecret: anthropic-provider-key
+      key: provider-anthropic
+      envVar: ANTHROPIC_API_KEY
+  visionone:
+    url: https://api.au.xdr.trendmicro.com
+    authToken:
+      bootstrap:
+        token: <VISION_ONE_BOOTSTRAP_TOKEN>

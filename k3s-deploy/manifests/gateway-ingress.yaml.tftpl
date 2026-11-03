@@ -1,0 +1,20 @@
+# Routes the gateway hostname to the LLM proxy (port 8080) of the trendai-gateway-gateway Service.
+# Rendered by Terraform (gateway.tf) and applied after the Helm install.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: trendai-gateway
+  namespace: trendai-gateway
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: ${gateway_hostname}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: trendai-gateway-gateway
+                port:
+                  number: 8080
