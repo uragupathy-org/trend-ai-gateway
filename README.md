@@ -268,6 +268,16 @@ export ALIAS='openai.gpt-oss-safeguard-20b'
 
 The script reports PASS or FAIL for each case and exits 1 on any mismatch.
 
+**MCP handshake and access checks** (port-forward first, see Prerequisites):
+
+```bash
+./test-mcp.sh            # defaults to http://localhost:8081/
+```
+
+The script runs initialize, notifications, tools/list, a safe tool call, and a restricted tool call that the Forbid rule should deny.
+
+**Test scenarios and console configuration:** see [TEST-SCENARIOS.md](TEST-SCENARIOS.md) for the routing, access control and guardrail scenarios, the configuration as observed in the console, and the findings to review before a demo.
+
 **Mock MCP:** port-forward the gateway's MCP proxy, then run the handshake from the mock MCP README.
 
 ```bash
