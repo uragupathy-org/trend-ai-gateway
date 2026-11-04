@@ -30,7 +30,7 @@ The full list is in the [top-level README](../README.md#prerequisites). For this
 - AWS permissions for EC2, Elastic IPs, key pairs, security groups, and `ssm:GetParameter` on the Ubuntu AMI path. ELB, ACM and Route 53 are needed only with a domain
 - At least one free Elastic IP and enough vCPU quota for `instance_type` (`t3.medium` needs 2)
 - A VPC with two or more subnets in different availability zones, and an internet route
-- A Vision One bootstrap token, and a Mantle bearer token with model access enabled
+- Private Preview access to Vision One AI Gateway, a one-time Vision One bootstrap token, and a Mantle bearer token with model access enabled
 
 ## Inputs
 

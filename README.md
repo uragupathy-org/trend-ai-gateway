@@ -43,8 +43,9 @@ Terraform's `local-exec` steps call `kubectl` and `helm` on the machine that app
 
 ### Vision One
 
+- **Private Preview access (required).** AI Gateway is a Private Preview feature, and the console shows a "Pre-release" banner. Request access from your Trend Micro account team or the AI Gateway product team before you start, and confirm that your account is enabled for AI Gateway in your region. Features in this build may change, and some (such as Discovered Tools) have known limitations.
 - An account with AI Gateway access in your region, and permission to create a gateway.
-- A one-time bootstrap token from the AI Gateway setup flow. Put it in `visionone_bootstrap_token`. Its API URL goes in `overrides.yaml` under `gateway.visionone.url`.
+- A one-time bootstrap token from the AI Gateway setup flow, which you can only generate once access is granted. Put it in `visionone_bootstrap_token`. Its API URL goes in `overrides.yaml` under `gateway.visionone.url`.
 
 ### Bedrock Mantle (for the live model connection)
 
