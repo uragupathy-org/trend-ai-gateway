@@ -115,70 +115,6 @@ The "Bedrock Mantle Guardrails" assignment covers all traffic, so it also inspec
 | M-01 | `tools/call` on `add_numbers` with `a` and `b` | Allow. If it's blocked, the guardrail is over-matching MCP responses. | `test-mcp.sh` check 4 |
 | M-02 | `tools/call` on `get_server_time` | Allow. A block here is the false positive described in the field guide. | Events |
 
-### 3.7 MCP stream test (handshake, tool list, safe and restricted calls)
-
-The MCP proxy is not on the public ALB. Start a port-forward in its own terminal first:
-
-```bash
-export KUBECONFIG=k3s-deploy/generated/k3s-aigateway-kubeconfig.yaml
-kubectl -n trendai-gateway port-forward svc/trendai-gateway-gateway 8081:8081
-```
-
-Then run the handshake in another terminal:
-
-```bash
-MCP=http://localhost:8081/
-H=(-H "Content-Type: application/json" \
-   -H "Accept: application/json, text/event-stream" \
-   -H "Authorization: Bearer $AI_GATEWAY_KEY")
-
-# 1. initialize, and capture the session id from the response header
-SID=$(curl -sS -D - -o /dev/null -X POST "$MCP" "${H[@]}" \
-  -d '{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"demo-client","version":"1.0"}}}' \
-  | tr -d '\r' | awk -F': ' 'tolower($1)=="mcp-session-id"{print $2}')
-echo "session: $SID"
-
-# 2. notifications/initialized (expect 202 with an empty body)
-curl -sS -o /dev/null -w "initialized: %{http_code}\n" -X POST "$MCP" "${H[@]}" -H "Mcp-Session-Id: $SID" \
-  -d '{"jsonrpc":"2.0","method":"notifications/initialized"}'
-
-# 3. tools/list
-curl -sS -X POST "$MCP" "${H[@]}" -H "Mcp-Session-Id: $SID" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
-echo
-
-# 4. tools/call on a safe tool
-curl -sS -X POST "$MCP" "${H[@]}" -H "Mcp-Session-Id: $SID" \
-  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"Mock-MCP-Safe-Server__add_numbers","arguments":{"a":3,"b":4}}}'
-echo
-
-# 5. tools/call on the restricted tool (should be denied by the Forbid rule)
-curl -sS -X POST "$MCP" "${H[@]}" -H "Mcp-Session-Id: $SID" \
-  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"Mock-MCP-Restricted-Server__delete_customer_record","arguments":{"customer_id":"CUST-10492"}}}'
-echo
-```
-
-Tool names use the `<server>__<tool>` form. The server names must match the upstreams registered in the console (`Mock-MCP-Safe-Server`, `Mock-MCP-Restricted-Server`). The earlier example used `Demo-MCP` names, which don't exist in this tenant.
-
-| ID | Step | Expect | Scenario |
-|---|---|---|---|
-| MCP-01 | 1. initialize | A session ID is printed. If it is empty, the gateway does not issue sessions. Retry without the `Mcp-Session-Id` header. | Handshake |
-| MCP-02 | 2. notifications/initialized | `initialized: 202` with an empty body | Handshake |
-| MCP-03 | 3. tools/list | Tools listed as `Mock-MCP-Safe-Server__add_numbers`, `Mock-MCP-Safe-Server__get_server_time` and `Mock-MCP-Restricted-Server__delete_customer_record` | Access: discovery |
-| MCP-04 | 4. safe tool call | Result `3 + 4 = 7`. Allowed by the Permit rule for the safe server. | A-02 |
-| MCP-05 | 5. restricted tool call | HTTP 200 with a JSON-RPC `error` containing `blocked by access policy`. Denied by the Forbid rule. | A-03 |
-
-The gateway may answer in server-sent events. If so, filter the output with `sed -n 's/^data: //p'`. A denial is HTTP 200 with a JSON-RPC error in the body, so check the body, not the status code.
-
-### 3.6 Streaming
-
-| ID | Send | Expect |
-|---|---|---|
-| S-01 | Any allowed LLM prompt with `"stream": true` | SSE chunks, ending in `data: [DONE]` |
-| S-02 | A harmful prompt with `"stream": true` | Blocked before any chunk arrives |
-
-Run `./test-llm.sh --stream` for S-01 and S-02.
-
 ## 4. Running the tests
 
 ```bash
@@ -189,8 +125,17 @@ export ALIAS='openai.gpt-oss-safeguard-20b'      # or the alias under test
 ./test-llm.sh
 ./test-llm.sh --stream
 
-# MCP: handshake and access checks (with the port-forward running)
+# MCP: handshake and access checks (start the port-forward first, see below)
 ./test-mcp.sh
+```
+
+### Start the MCP port-forward before the MCP tests
+
+The MCP proxy is not on the public ALB. Run the port-forward in its own terminal, and leave it running while you run `test-mcp.sh`:
+
+```bash
+export KUBECONFIG=k3s-deploy/generated/k3s-aigateway-kubeconfig.yaml
+kubectl -n trendai-gateway port-forward svc/trendai-gateway-gateway 8081:8081
 ```
 
 Both scripts exit 1 when a check fails. They read the endpoint from `GATEWAY_URL` (LLM) and `MCP_URL` (MCP), so you can point them at the public URL or the port-forward.
