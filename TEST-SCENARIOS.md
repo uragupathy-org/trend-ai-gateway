@@ -64,11 +64,7 @@ Expected results: **allow** means HTTP 200 with a normal response. **deny** mean
 | ID | Send | Expect | Confirm |
 |---|---|---|---|
 | R-01 | Model `openai.gpt-oss-20b` | Served by `deepseek.v3.1` through `bedrock-mantle` | Events: upstream and alias |
-| R-02 | Model `some-unknown-model` | Served by `google.gemma-3-4b-it` (wildcard rule) | Events: upstream and alias |
-| R-03 | Model `openai.gpt-oss-safeguard-20b` | Check which alias answers. No rule names this model exactly, so it falls to the wildcard unless the gateway resolves an alias directly. See F-2. | Events: upstream and alias |
-| R-04 | Disable rule 1, send `openai.gpt-oss-20b` | Falls through to the wildcard rule | Events |
-
-R-04 changes the console. Re-enable rule 1 afterwards.
+| R-02 | Any model not named by a routing rule (for example `some-unknown-model`) | Served by `google.gemma-3-4b-it` through the wildcard rule (`*`, priority 2) | Events: upstream and alias |
 
 ### 3.2 Access control
 
@@ -190,7 +186,7 @@ Both scripts exit 1 when a check fails. They read the endpoint from `GATEWAY_URL
 
 **F-1. The default access rule is Allow.** The field guide says the default is Deny. In this tenant, anything not covered by a rule is allowed. A test that expects a block for an identity outside a permit rule will pass only if you change the default to Deny, or add an explicit Forbid. Decide which you want before you demo.
 
-**F-2. Alias names and the wildcard.** The `bedrock-mantle` models are exposed as aliases with the same names as the models. The only rule that names an alias-like model is rule 1, and it matches `openai.gpt-oss-20b`, not `openai.gpt-oss-safeguard-20b`. Requests for the safeguard model may therefore be routed to the wildcard alias, `google.gemma-3-4b-it`. Run R-03 and check the upstream in Events. If it's the wildcard, add a routing rule for the safeguard model.
+**F-2. Alias names and the wildcard.** The `bedrock-mantle` models are exposed as aliases with the same names as the models. The only rule that names an alias-like model is rule 1, and it matches `openai.gpt-oss-20b`, not `openai.gpt-oss-safeguard-20b`. Requests for the safeguard model may therefore be routed to the wildcard alias, `google.gemma-3-4b-it`. Check the upstream for that model in Events. If it is the wildcard alias, add a routing rule for the safeguard model.
 
 **F-3. The guardrail covers MCP traffic.** The "Bedrock Mantle Guardrails" assignment applies to all traffic. The field guide warns that content inspection at the default "Aggressive" level can block benign MCP responses. Here, the detection level for harmful content is "2 – Moderate", but the assignment still covers MCP. Run M-01 and M-02 to see whether it blocks them. If it does, narrow the assignment to the LLM provider.
 
