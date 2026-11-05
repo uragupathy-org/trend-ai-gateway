@@ -16,7 +16,7 @@ The configuration below was read from the Vision One console on 2026-11-04. Re-c
 | MCP upstreams | `Mock-MCP-Safe-Server` (2 tools: `add_numbers`, `get_server_time`); `Mock-MCP-Restricted-Server` (1 tool: `delete_customer_record`) |
 | Virtual key | Issued from **Identity Management → Identities**. Store it in `AI_GATEWAY_KEY`, never in a file. |
 
-## 2. Configuration as observed
+## 2. Configurations
 
 ### 2.1 Routing rules
 
@@ -117,28 +117,42 @@ The "Bedrock Mantle Guardrails" assignment covers all traffic, so it also inspec
 
 ## 4. Running the tests
 
+### Before you start: port-forwards
+
+Two port-forwards are needed. Run each in its own terminal and leave it running for the whole test session.
+
+**LLM port-forward (port 8080).** Needed only if you test without a public domain. If you use the public URL (`https://<gateway_hostname>`), skip this step.
+
 ```bash
-export AI_GATEWAY_KEY='<virtual key>'
-export ALIAS='openai.gpt-oss-safeguard-20b'      # or the alias under test
-
-# LLM: routing, guardrails and streaming controls
-./test-llm.sh
-./test-llm.sh --stream
-
-# MCP: handshake and access checks (start the port-forward first, see below)
-./test-mcp.sh
+export KUBECONFIG=k3s-deploy/generated/k3s-aigateway-kubeconfig.yaml
+kubectl -n trendai-gateway port-forward svc/trendai-gateway-gateway 8080:8080
 ```
 
-### Start the MCP port-forward before the MCP tests
-
-The MCP proxy is not on the public ALB. Run the port-forward in its own terminal, and leave it running while you run `test-mcp.sh`:
+**MCP port-forward (port 8081).** Always needed. The MCP proxy is not on the public ALB.
 
 ```bash
 export KUBECONFIG=k3s-deploy/generated/k3s-aigateway-kubeconfig.yaml
 kubectl -n trendai-gateway port-forward svc/trendai-gateway-gateway 8081:8081
 ```
 
-Both scripts exit 1 when a check fails. They read the endpoint from `GATEWAY_URL` (LLM) and `MCP_URL` (MCP), so you can point them at the public URL or the port-forward.
+Both port-forwards use the same Service, so you can also run them as one command with `8080:8080 8081:8081`.
+
+### Run the tests
+
+```bash
+export AI_GATEWAY_KEY='<virtual key>'
+export ALIAS='openai.gpt-oss-safeguard-20b'      # or the alias under test
+
+# LLM: routing, guardrails and streaming controls
+# Public URL by default. For the port-forward, add: GATEWAY_URL=http://localhost:8080
+./test-llm.sh
+./test-llm.sh --stream
+
+# MCP: handshake and access checks (needs the MCP port-forward on 8081)
+./test-mcp.sh
+```
+
+Both scripts exit 1 when a check fails. `GATEWAY_URL` sets the LLM endpoint and `MCP_URL` sets the MCP endpoint, so you can point them at the public URL or the port-forwards.
 
 ### 4.1 Scripted cases in `test-llm.sh`
 
