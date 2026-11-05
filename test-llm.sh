@@ -2,8 +2,9 @@
 # Sends control and guardrail test prompts to the AI Gateway chat endpoint and
 # checks each result against what it should be.
 #
-#   export AI_GATEWAY_KEY='<virtual key>'
+#   export VKEY='<virtual key>'
 #   export ALIAS='mock-gpt-4o'
+#   export GATEWAY_URL='https://<gateway_hostname>'   # or http://localhost:8080 via port-forward
 #   ./test-llm.sh [--stream] [--url <base-url>] [--verbose]
 #
 # Exit code: 0 when every case matches its expectation, 1 otherwise.
@@ -87,7 +88,9 @@ for entry in "${CASES[@]}"; do
 
   if [[ "$expect" == "allow" && "$code" == "200" ]]; then
     result="PASS"
-  elif [[ "$expect" == "block" && "$code" != "200" && "$code" != "000" ]]; then
+  elif [[ "$expect" == "block" && "$code" =~ ^4[0-9][0-9]$ ]]; then
+    # Only a 4xx counts as a guardrail block. 5xx and 000 mean the gateway or the
+    # load balancer failed, so the case cannot pass.
     result="PASS"
   else
     result="FAIL"

@@ -143,8 +143,9 @@ Both port-forwards use the same Service, so you can also run them as one command
 export AI_GATEWAY_KEY='<virtual key>'
 export ALIAS='openai.gpt-oss-safeguard-20b'      # or the alias under test
 
-# LLM: routing, guardrails and streaming controls
-# Public URL by default. For the port-forward, add: GATEWAY_URL=http://localhost:8080
+# LLM: routing, guardrails and streaming controls.
+# GATEWAY_URL selects the endpoint. Use the public URL, or the LLM port-forward:
+export GATEWAY_URL='https://<gateway_hostname>'      # or: http://localhost:8080
 ./test-llm.sh
 ./test-llm.sh --stream
 
